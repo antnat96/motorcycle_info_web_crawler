@@ -15,17 +15,34 @@ makes_soup = BeautifulSoup(makes_page.content, "html.parser")
 makes_menu_items = makes_soup.select("div[class=subMenu] > a")
 makes_list = []
 makes_links = []
-i = 0
-j = 0
+i = j = 0
 
 for x in makes_menu_items:
-    makes_list.append(x.string)
-    print(makes_list[i])
-    i = i + 1
+    if i > 7:
+        makes_list.append(x.string) # Makes to be added to the workbook
+    i += 1
+    
 for x in makes_menu_items:
-    makes_links.append(makes_URL + x.get("href").split("../../")[1])
-    print(makes_links[j])
-    j = j + 1
-
-
-# Models
+    if j > 7:    
+        # Models
+        models_URL = makes_URL + x.get("href").split("../../")[1]
+        models_page = requests.get(models_URL)
+        models_soup = BeautifulSoup(models_page.content, "html.parser")
+        models_menu_items = models_soup.select("div[class=subMenu] > a")
+        models_list = []
+        models_links = []
+        for x in models_menu_items:
+            models_list.append(x.string) # Models to be added to the workbook
+        for x in models_menu_items:
+            # Info
+            info_URL = models_URL + x.get("href").split("../../")[1]
+            info_page = requests.get(info_URL)
+            info_soup = BeautifulSoup(info_page.content, "html.parser")
+            info_menu_items = info_soup.select("div[class=subMenu] > a")
+            info_list = []
+            info_links = []
+            for x in info_menu_items:
+                info_list.append(x.string) # Info to be added to the workbook
+            for x in info_menu_items:
+                info_links.append(info_URL + x.get("href").split("../../")[1])
+    j += 1
