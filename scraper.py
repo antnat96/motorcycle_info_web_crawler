@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import xlsxwriter
+import psycopg2
 
 # Set up the workbook
 # workbook = xlsxwriter.Workbook("makes.xlsx")
@@ -9,40 +10,51 @@ row = 0
 col = 0
 
 # Makes
-makes_URL = "https://www.motorcyclespecs.co.za/"
-makes_page = requests.get(makes_URL)
+BASE_URL = "https://www.motorcyclespecs.co.za/"
+makes_page = requests.get(BASE_URL)
 makes_soup = BeautifulSoup(makes_page.content, "html.parser")
 makes_menu_items = makes_soup.select("div[class=subMenu] > a")
-makes_list = []
-makes_links = []
-i = j = 0
 
+j = 0
+# Loop through each make link
 for x in makes_menu_items:
-    if i > 7:
-        makes_list.append(x.string) # Makes to be added to the workbook
-    i += 1
-    
-for x in makes_menu_items:
-    if j > 7:    
-        # Models
-        models_URL = makes_URL + x.get("href").split("../../")[1]
-        models_page = requests.get(models_URL)
-        models_soup = BeautifulSoup(models_page.content, "html.parser")
-        models_menu_items = models_soup.select("div[class=subMenu] > a")
-        models_list = []
-        models_links = []
-        for x in models_menu_items:
-            models_list.append(x.string) # Models to be added to the workbook
-        for x in models_menu_items:
-            # Info
-            info_URL = models_URL + x.get("href").split("../../")[1]
-            info_page = requests.get(info_URL)
-            info_soup = BeautifulSoup(info_page.content, "html.parser")
-            info_menu_items = info_soup.select("div[class=subMenu] > a")
-            info_list = []
-            info_links = []
-            for x in info_menu_items:
-                info_list.append(x.string) # Info to be added to the workbook
-            for x in info_menu_items:
-                info_links.append(info_URL + x.get("href").split("../../")[1])
+    print("First")
+    # Looping through the bottom menu first two items 
+    if j > 7:
+        if "Honda" in x.text:
+            # Get the link to the page with a list of the models for that make
+            make_URL = BASE_URL + x.get("href").split("../../")[1] 
+            # Request the page
+            make_page = requests.get(make_URL) 
+            make_soup = BeautifulSoup(make_page.content, "html.parser")
+            # Get all the links to each individual model 
+            model_menu_items = make_soup.select("td > a")
+            for x in model_menu_items:
+                print("Second")
+                # Only if it's a model
+                if "../model/" in x.get("href"):
+                    # Info
+                    info_URL = BASE_URL + x.get("href").split("../")[1]
+                    info_page = requests.get(info_URL)
+                    info_soup = BeautifulSoup(info_page.content, "html.parser")
+                    info_columns = info_soup.find_all("td", {"width":"30%"})
+                    info_columns_text = []
+                    info_rows = info_soup.find_all("td", {"width":"70%"})
+                    info_rows_text = []
+                    for x in info_columns:
+                        print("Third")
+                        info_columns_text.append(x.text.replace("\n",""))
+                        print(x.text.replace("\n",""))
+                    for x in info_rows:
+                        info_rows_text.append(x.text.replace("\n",""))
+                        print(x.text.replace("\n",""))
     j += 1
+
+def add_info_to_db(info_array):
+    conn = psycopg2.connect(host="localhost", port = 5432, database="postgres", user="postgres", password="postgres_password")
+    cur = conn.cursor()
+    cur.execute("""SELECT * FROM vendors""")
+    query_results = cur.fetchall()
+    print(query_results)
+    cur.close()
+    conn.close()
